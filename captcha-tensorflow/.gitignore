@@ -1,5 +1,5 @@
-# .gitignore by JackonYang
 
+datasets/images/*
 
 images/*
 log/*

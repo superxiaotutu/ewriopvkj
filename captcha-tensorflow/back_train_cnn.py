@@ -6,21 +6,26 @@ import numpy
 import sys
 import tensorflow as tf
 import matplotlib.pyplot as plt
-from datasets.load_data import *
+
 import os
 import tensorflow.contrib.slim as slim
-from datasets.constant import *
-
-os.environ["CUDA_VISIBLE_DEVICES"] = '2'
+from datasets.constant import  *
+os.environ["CUDA_VISIBLE_DEVICES"] = '1,2'
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 
-print('label_size: %s, image_size: %s' % (LABEL_SIZE, IMAGE_SIZE))
-FLAG = 0
-x = tf.placeholder(tf.float32, [None, IMAGE_HEIGHT, IMAGE_WIDTH, 3])
-y_ = tf.placeholder(tf.int32, [None, NUM_PER_IMAGE * LABEL_SIZE])
+x = tf.placeholder(tf.float32, [None, IMAGE_HEIGHT, IMAGE_WIDTH, 1])
+y_ = tf.placeholder(tf.int32, [None, NUM_PER_IMAGE*LABEL_SIZE])
 keep_prob = tf.placeholder(tf.float32)
 
+def read_image(type='train'):
+
+    image = tf.image.resize_images(image, (IMAGE_WIDTH, IMAGE_HEIGHT))
+
+    # 创建 batch
+    batch = tf.train.batch([image, label], batch_size=BATCH_SIZE, num_threads=1)
+
+    return batch
 
 def variable_summaries(var):
     """Attach a lot of summaries to a Tensor (for TensorBoard visualization)."""
@@ -31,7 +36,7 @@ def variable_summaries(var):
 
 def CNN(input_data, keep_prob):
     end_point = {}
-    resized = end_point['resized'] = tf.reshape(input_data, [-1, IMAGE_HEIGHT, IMAGE_WIDTH, 3])
+    resized = end_point['resized'] = tf.reshape(input_data, [-1, IMAGE_HEIGHT,IMAGE_WIDTH, 1])
     tf.summary.image('input', resized, max_outputs=LABEL_SIZE)
 
     conv1 = end_point['conv1'] = slim.conv2d(resized, 32, 3, padding='SAME', activation_fn=tf.nn.relu)
@@ -45,11 +50,10 @@ def CNN(input_data, keep_prob):
 
     drop_out = end_point['drop_out'] = slim.dropout(full1, keep_prob)
 
-    full2 = end_point['full2'] = slim.fully_connected(drop_out, NUM_PER_IMAGE * LABEL_SIZE, activation_fn=None)
+    full2 = end_point['full2'] = slim.fully_connected(drop_out, NUM_PER_IMAGE*LABEL_SIZE, activation_fn=None)
     logits = end_point['logits'] = tf.reshape(full2, [-1, NUM_PER_IMAGE, LABEL_SIZE])
     predict = end_point['predict'] = tf.nn.softmax(logits)
     return end_point, logits, predict
-
 
 y_expect_reshaped = tf.reshape(y_, [-1, NUM_PER_IMAGE, LABEL_SIZE])
 end, log, pre = CNN(x, keep_prob)
@@ -72,11 +76,10 @@ with tf.name_scope('evaluate_accuracy'):
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     variable_summaries(accuracy)
 
-train_data = train_read_and_decode()
-test_data = test_read_and_decode()
-saver = tf.train.Saver()
 
-
+train_data = ()
+test_data = read_image('test')
+saver=tf.train.Saver()
 def save():
     saver.save(sess, "model/model.ckpt")
 
@@ -86,45 +89,44 @@ def restore():
 
 
 with tf.Session(config=config) as sess:
+
+
     merged = tf.summary.merge_all()
     train_writer = tf.summary.FileWriter(LOG_DIR + '/train', sess.graph)
     test_writer = tf.summary.FileWriter(LOG_DIR + '/test', sess.graph)
-    tf.global_variables_initializer().run()
-    # restore()
-    # 开启一个协调器
+    try:
+        restore()
+        print('init')
+    except:
+        sess.run(tf.global_variables_initializer())
+        sess.run(tf.local_variables_initializer())
     coord = tf.train.Coordinator()
-    # 启动队列填充才可以是用batch
     threads = tf.train.start_queue_runners(sess, coord)
     sess.graph.finalize()
 
     for i in range(MAX_STEPS):
         batch = sess.run(train_data)
-        batch[1] = read_labels(batch[1])
-        # print(batch[0].shape,batch[0].dtype)
-        # print(batch[1].shape,batch[1].dtype)
-        step_summary, _ = sess.run([merged, train_step], feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.8})
+        step_summary, _ = sess.run([merged, train_step], feed_dict={x: batch[0], y_: batch[1], keep_prob: 1.0})
         train_writer.add_summary(step_summary, i)
-        if i % 2000 == 0 and i != 0:
+        if i % 2000 == 0 and i!=0:
             # pass
             save()
         if i % 100 == 0:
             # Test trained model
-            test_batch = sess.run(test_data)
-            test_batch[1] = read_labels(test_batch[1])
+            test_batch = sess.run(train_data)
             valid_summary, train_accuracy = sess.run([merged, accuracy],
                                                      feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.8})
+
             train_writer.add_summary(valid_summary, i)
-            test_summary, test_accuracy = sess.run([merged, accuracy],
-                                                   feed_dict={x: test_batch[0], y_: test_batch[1], keep_prob: 0.8})
+            test_summary, test_accuracy = sess.run([merged, accuracy], feed_dict={x: test_batch[0], y_: test_batch[1], keep_prob: 0.8})
             test_writer.add_summary(test_summary, i)
             print('step %s,train acc =  %.2f%% testing accuracy = %.2f%%' % (
-                i, train_accuracy * 100, test_accuracy * 100))
+                i,train_accuracy*100, test_accuracy * 100))
     save()
     train_writer.close()
     test_writer.close()
 
     # final check after looping
-    test_batch = sess.run(test_data)
-    test_batch[1] = read_labels(test_batch[1])
-    test_accuracy = accuracy.eval(feed_dict={x: test_batch[0], y_: test_batch[1], keep_prob: 1.0})
+    batch = sess.run(test_data)
+    test_accuracy = accuracy.eval(feed_dict={x: batch[0], y_: batch[1], keep_prob: 1.0})
     print('testing accuracy = %.2f%%' % (test_accuracy * 100,))
