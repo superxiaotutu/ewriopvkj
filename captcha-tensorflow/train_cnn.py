@@ -89,8 +89,11 @@ with tf.Session(config=config) as sess:
     merged = tf.summary.merge_all()
     train_writer = tf.summary.FileWriter(LOG_DIR + '/train', sess.graph)
     test_writer = tf.summary.FileWriter(LOG_DIR + '/test', sess.graph)
-    tf.global_variables_initializer().run()
-    # restore()
+    try:
+        restore()
+        print('restore')
+    except:
+        tf.global_variables_initializer().run()
     # 开启一个协调器
     coord = tf.train.Coordinator()
     # 启动队列填充才可以是用batch
@@ -104,7 +107,7 @@ with tf.Session(config=config) as sess:
         # print(batch[1].shape,batch[1].dtype)
         step_summary, _ = sess.run([merged, train_step], feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.8})
         train_writer.add_summary(step_summary, i)
-        if i % 2000 == 0 and i != 0:
+        if i % 10000 == 0  and  i !=0:
             # pass
             save()
         if i % 100 == 0:
