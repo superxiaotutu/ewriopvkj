@@ -7,7 +7,7 @@ from constant import *
 import tensorflow as tf
 from PIL import Image, ImageFont, ImageDraw, ImageFilter
 import matplotlib.pyplot as plt
-
+width, height = (IMAGE_WIDTH,IMAGE_HEIGHT)
 def rndColor():
     return (random.randint(64,255),random.randint(64,255),random.randint(64,255))
 
@@ -15,7 +15,7 @@ def rndColor2():
     return (random.randint(32,127),random.randint(32,127),random.randint(32,127))
 
 back_ground=rndColor()
-width, height = (110,55)
+
 font = ImageFont.truetype('Arial.ttf', size=25)
 def gene_code_1(code, fn):
     font_width, font_height = font.getsize(code)
@@ -114,5 +114,5 @@ def _gen_captcha(img_dir, num_per_image):
     print("退出主线程")
     e = time.time()
     print(e - s)
-_gen_captcha(build_file_path('train'), NUM_PER_IMAGE)
-# _gen_captcha(build_file_path('test'), NUM_PER_IMAGE)
+# _gen_captcha(build_file_path('train'), NUM_PER_IMAGE)
+_gen_captcha(build_file_path('test'), NUM_PER_IMAGE)

@@ -1,8 +1,8 @@
 import os
 import numpy as np
 import tensorflow as tf
-from .constant  import *
-cwd=os.getcwd()+'/datasets'
+from constant  import *
+cwd=os.getcwd()
 
 def read_labels(codes):
     data = []
@@ -37,7 +37,9 @@ def test_read_and_decode():
     return batch
 
 def train_read_and_decode():
-    files_name= [cwd+'/images/train/'+i for i in os.listdir(cwd+'/images/train')]
+    # files_name= [cwd+'/images/train/'+i for i in os.listdir(cwd+'/images/train') if i.endswith('tfrecords')]
+    files_name= ['D:/pyproject/ewriopvkj/captcha-tensorflow/datasets/images/train/train.tfrecords']
+
     filename_queue = tf.train.string_input_producer(files_name)
     print(files_name)
     reader = tf.TFRecordReader()
@@ -54,20 +56,20 @@ def train_read_and_decode():
     batch = tf.train.shuffle_batch([img, label], batch_size=BATCH_SIZE,
         capacity=10000, min_after_dequeue=5000, num_threads=64)
     return batch
-#
-# train_batch=train_read_and_decode()
-#
-# sess = tf.Session()
-#
-# coord = tf.train.Coordinator()
-# threads = tf.train.start_queue_runners(sess=sess, coord=coord)
-# sess.run(tf.global_variables_initializer())
-# sess.run(tf.local_variables_initializer())
-#
-#
-# import matplotlib.pyplot as plt
-#
-# batch=sess.run(train_batch)
-# # print(batch[0][0])
+
+train_batch=train_read_and_decode()
+
+sess = tf.Session()
+
+coord = tf.train.Coordinator()
+threads = tf.train.start_queue_runners(sess=sess, coord=coord)
+sess.run(tf.global_variables_initializer())
+sess.run(tf.local_variables_initializer())
+
+
+import matplotlib.pyplot as plt
+
+batch=sess.run(train_batch)
+print(batch[1][0])
 # plt.imshow(batch[0][0])
-# plt.show()
+plt.show()
