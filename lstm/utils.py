@@ -10,7 +10,7 @@ import cv2
 
 tf.app.flags.DEFINE_integer('max_stepsize', 12, 'max_stepsize')
 
-tf.app.flags.DEFINE_boolean('restore', False, 'whether to restore from the latest checkpoint')
+tf.app.flags.DEFINE_boolean('restore', True, 'whether to restore from the latest checkpoint')
 tf.app.flags.DEFINE_string('checkpoint_dir', './checkpoint/', 'the checkpoint dir')
 tf.app.flags.DEFINE_float('initial_learning_rate', 1e-3, 'inital lr')
 
@@ -134,6 +134,7 @@ def accuracy_calculation(original_seq, decoded_seq, ignore_value=-1, isPrint=Fal
     count = 0
     for i, origin_label in enumerate(original_seq):
         decoded_label = [j for j in decoded_seq[i] if j != ignore_value]
+
 
         if origin_label == decoded_label:
             count += 1
