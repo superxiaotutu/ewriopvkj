@@ -84,48 +84,25 @@ def build_file_path(x):
         os.mkdir('../imgs')
     return os.path.join('../imgs', x)
 
-def _gen_captcha():
+def train_gen_captcha(train_set):
     img_dir = build_file_path('train')
     if not os.path.exists(img_dir):
         os.makedirs(img_dir)
     s = time.time()
     print('generating %s epoches of captchas in %s' % (1, img_dir))
-    for num in range(TRAIN_SET_NUM):
+    # for num in range(train_set):
+    #     print(num)
+    #     slice = random.sample(LABEL_CHOICES_LIST, 4)
+    #     captcha = ''.join(slice)
+    #     fn = os.path.join(img_dir, '%s_%s.png' % (num, captcha))
+    #     gene_code_1(captcha, fn)
+    # for num in range(train_set):
+    #     slice = random.sample(LABEL_CHOICES_LIST, 4)
+    #     captcha = ''.join(slice)
+    #     fn = os.path.join(img_dir, '%s_%s.png' % (num, captcha))
+    #     gene_code_2(captcha, fn)
+    for num in range(train_set):
         print(num)
-        slice = random.sample(LABEL_CHOICES_LIST, 4)
-        captcha = ''.join(slice)
-        fn = os.path.join(img_dir, '%s_%s.png' % (num, captcha))
-        gene_code_1(captcha, fn)
-    for num in range(TRAIN_SET_NUM):
-        slice = random.sample(LABEL_CHOICES_LIST, 4)
-        captcha = ''.join(slice)
-        fn = os.path.join(img_dir, '%s_%s.png' % (num, captcha))
-        gene_code_2(captcha, fn)
-    for num in range(TRAIN_SET_NUM):
-        slice = random.sample(LABEL_CHOICES_LIST, 4)
-        captcha = ''.join(slice)
-        fn = os.path.join(img_dir, '%s_%s.png' % (num, captcha))
-        gene_code_3(captcha, fn)
-    print("退出主线程")
-    e = time.time()
-    print(e - s)
-    img_dir = build_file_path('val')
-    if not os.path.exists(img_dir):
-        os.makedirs(img_dir)
-    s = time.time()
-    print('generating %s epoches of captchas in %s' % (1, img_dir))
-    for num in range(TEST_SET_NUM):
-        print(num)
-        slice = random.sample(LABEL_CHOICES_LIST, 4)
-        captcha = ''.join(slice)
-        fn = os.path.join(img_dir, '%s_%s.png' % (num, captcha))
-        gene_code_1(captcha, fn)
-    for num in range(TEST_SET_NUM):
-        slice = random.sample(LABEL_CHOICES_LIST, 4)
-        captcha = ''.join(slice)
-        fn = os.path.join(img_dir, '%s_%s.png' % (num, captcha))
-        gene_code_2(captcha, fn)
-    for num in range(TEST_SET_NUM):
         slice = random.sample(LABEL_CHOICES_LIST, 4)
         captcha = ''.join(slice)
         fn = os.path.join(img_dir, '%s_%s.png' % (num, captcha))
@@ -134,4 +111,31 @@ def _gen_captcha():
     e = time.time()
     print(e - s)
 
-_gen_captcha()
+def val_gen_captcha(set_num):
+    img_dir = build_file_path('val')
+    if not os.path.exists(img_dir):
+        os.makedirs(img_dir)
+    s = time.time()
+    print('generating %s epoches of captchas in %s' % (1, img_dir))
+    # for num in range(set_num):
+    #     print(num)
+    #     slice = random.sample(LABEL_CHOICES_LIST, 4)
+    #     captcha = ''.join(slice)
+    #     fn = os.path.join(img_dir, '%s_%s.png' % (num, captcha))
+    #     gene_code_1(captcha, fn)
+    # for num in range(set_num):
+    #     slice = random.sample(LABEL_CHOICES_LIST, 4)
+    #     captcha = ''.join(slice)
+    #     fn = os.path.join(img_dir, '%s_%s.png' % (num, captcha))
+    #     gene_code_2(captcha, fn)
+    for num in range(set_num):
+        slice = random.sample(LABEL_CHOICES_LIST, 4)
+        captcha = ''.join(slice)
+        fn = os.path.join(img_dir, '%s_%s.png' % (num, captcha))
+        gene_code_3(captcha, fn)
+    print("退出主线程")
+    e = time.time()
+    print(e - s)
+
+train_gen_captcha(100000)
+val_gen_captcha(10000)
