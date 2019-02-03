@@ -64,11 +64,12 @@ def load_labels(file):
 
 def load_img_path(images_path):
     tmp = os.listdir(images_path)
-    tmp.sort(key=lambda x: int(x.split('.')[0]))
+    # tmp.sort(key=lambda x: int(x.split('.')[0]))
 
     file_names = [images_path + s for s in tmp]
 
     file_names = np.asarray(file_names)
+    print(file_names)
 
     return file_names
 
@@ -103,19 +104,19 @@ def cp_file(imgs_list_para, labels_list_para, dst_para):
 
 
 if __name__ == '__main__':
-    labels_path = './imgs/labels.txt'
+    labels_path = '../imgs/labels.txt'
     labels, labels_dict = load_labels(labels_path)
     # print(labels)
 
-    images_path = './imgs/image_contest_level_1/'
+    images_path = '../imgs/image_contest_level_1/'
     image_path_list = load_img_path(images_path)
     # print(image_path_list[:10])
 
-    X_train, y_train, X_val, y_val = split_train_val(image_path_list, labels, 80000)
-    write_to_file(X_train, "./imgs/X_train.txt")
-    write_to_file(y_train, "./imgs/y_train.txt")
-    write_to_file(X_val, "./imgs/X_val.txt")
-    write_to_file(y_val, "./imgs/y_val.txt")
+    X_train, y_train, X_val, y_val = split_train_val(image_path_list, labels, 40000)
+    write_to_file(X_train, "../imgs/X_train.txt")
+    write_to_file(y_train, "../imgs/y_train.txt")
+    write_to_file(X_val, "../imgs/X_val.txt")
+    write_to_file(y_val, "../imgs/y_val.txt")
 
-    cp_file(X_train, y_train, './imgs/train/')
-    cp_file(X_val, y_val, './imgs/val/')
+    cp_file(X_train, y_train, '../imgs/train/')
+    cp_file(X_val, y_val, '../imgs/val/')

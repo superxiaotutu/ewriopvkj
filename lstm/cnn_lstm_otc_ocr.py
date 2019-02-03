@@ -1,8 +1,10 @@
 """
 
 """
-
+import cv2
 import tensorflow as tf
+from tensorflow.contrib import slim
+
 import utils
 
 FLAGS = utils.FLAGS
@@ -28,7 +30,7 @@ class LSTMOCR(object):
         self.merged_summay = tf.summary.merge_all()
 
     def _build_model(self):
-        filters = [1, 64, 128, 128, FLAGS.out_channels]
+        filters = [3 if FLAGS.image_channel == 3 else 1, 64, 128, 128, FLAGS.out_channels]
         strides = [1, 2]
 
         feature_h = FLAGS.image_height
@@ -44,27 +46,30 @@ class LSTMOCR(object):
         # CNN part
         with tf.variable_scope('cnn'):
             x = self.inputs
-            for i in range(FLAGS.cnn_count):
+            outputs_size = [64, 128, 128, 64]
+            for i in range(4):
                 with tf.variable_scope('unit-%d' % (i + 1)):
-                    x = self._conv2d(x, 'cnn-%d' % (i + 1), 3, filters[i], filters[i + 1], strides[0])
-                    x = self._batch_norm('bn%d' % (i + 1), x)
-                    x = self._leaky_relu(x, FLAGS.leakiness)
-                    x = self._max_pool(x, 2, strides[1])
+                    x = slim.conv2d(x, outputs_size[i], 3, normalizer_fn=slim.batch_norm, padding='SAME',
+                                    activation_fn=tf.nn.relu)
+                    x = slim.max_pool2d(x, 2, padding='SAME')
+                _, feature_h, feature_w, _ = x.get_shape().as_list()
 
-                    # print('----x.get_shape().as_list(): {}'.format(x.get_shape().as_list()))
-                    _, feature_h, feature_w, _ = x.get_shape().as_list()
             print('\nfeature_h: {}, feature_w: {}'.format(feature_h, feature_w))
 
         # LSTM part
         with tf.variable_scope('lstm'):
             x = tf.transpose(x, [0, 2, 1, 3])  # [batch_size, feature_w, feature_h, FLAGS.out_channels]
             # treat `feature_w` as max_timestep in lstm.
+            print('x input shape: {}'.format(x.get_shape().as_list()))
+            print('lstm input shape: {}'.format([FLAGS.batch_size, feature_w, feature_h * FLAGS.out_channels]))
+
             x = tf.reshape(x, [FLAGS.batch_size, feature_w, feature_h * FLAGS.out_channels])
-            print('lstm input shape: {}'.format(x.get_shape().as_list()))
+
             self.seq_len = tf.fill([x.get_shape().as_list()[0]], feature_w)
             # print('self.seq_len.shape: {}'.format(self.seq_len.shape.as_list()))
 
             # tf.nn.rnn_cell.RNNCell, tf.nn.rnn_cell.GRUCell
+
             cell = tf.nn.rnn_cell.LSTMCell(FLAGS.num_hidden, state_is_tuple=True)
             if self.mode == 'train':
                 cell = tf.nn.rnn_cell.DropoutWrapper(cell=cell, output_keep_prob=FLAGS.output_keep_prob)
@@ -145,6 +150,9 @@ class LSTMOCR(object):
                                           merge_repeated=False)
         # self.decoded, self.log_prob = tf.nn.ctc_greedy_decoder(logits, seq_len,merge_repeated=False)
         self.dense_decoded = tf.sparse_tensor_to_dense(self.decoded[0], default_value=-1)
+
+    def get_logist(self):
+        return self.logits
 
     def _conv2d(self, x, name, filter_size, in_channels, out_channels, strides):
         with tf.variable_scope(name):

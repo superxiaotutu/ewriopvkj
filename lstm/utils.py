@@ -7,25 +7,26 @@ import numpy as np
 import tensorflow as tf
 import cv2
 
-# +-* + () + 10 digit + blank + space
-num_classes = 3 + 2 + 10 + 1 + 1
 
-maxPrintLen = 100
+tf.app.flags.DEFINE_integer('max_stepsize', 12, 'max_stepsize')
 
 tf.app.flags.DEFINE_boolean('restore', False, 'whether to restore from the latest checkpoint')
 tf.app.flags.DEFINE_string('checkpoint_dir', './checkpoint/', 'the checkpoint dir')
 tf.app.flags.DEFINE_float('initial_learning_rate', 1e-3, 'inital lr')
 
+
 tf.app.flags.DEFINE_integer('image_height', 60, 'image height')
 tf.app.flags.DEFINE_integer('image_width', 180, 'image width')
-tf.app.flags.DEFINE_integer('image_channel', 1, 'image channels as input')
+tf.app.flags.DEFINE_integer('image_channel', 3, 'image channels as input')
 
 tf.app.flags.DEFINE_integer('cnn_count', 4, 'count of cnn module to extract image features.')
 tf.app.flags.DEFINE_integer('out_channels', 64, 'output channels of last layer in CNN')
 tf.app.flags.DEFINE_integer('num_hidden', 128, 'number of hidden units in lstm')
 tf.app.flags.DEFINE_float('output_keep_prob', 0.8, 'output_keep_prob in lstm')
 tf.app.flags.DEFINE_integer('num_epochs', 10000, 'maximum epochs')
-tf.app.flags.DEFINE_integer('batch_size', 40, 'the batch_size')
+tf.app.flags.DEFINE_integer('batch_size', 64, 'the batch_size')
+tf.app.flags.DEFINE_integer('infer_batch_size', 1, 'the infer_batch_size')
+
 tf.app.flags.DEFINE_integer('save_steps', 1000, 'the step to save checkpoint')
 tf.app.flags.DEFINE_float('leakiness', 0.01, 'leakiness of lrelu')
 tf.app.flags.DEFINE_integer('validation_steps', 500, 'the step to validation')
@@ -37,9 +38,9 @@ tf.app.flags.DEFINE_float('beta2', 0.999, 'adam parameter beta2')
 tf.app.flags.DEFINE_integer('decay_steps', 10000, 'the lr decay_step for optimizer')
 tf.app.flags.DEFINE_float('momentum', 0.9, 'the momentum')
 
-tf.app.flags.DEFINE_string('train_dir', './imgs/train/', 'the train data dir')
-tf.app.flags.DEFINE_string('val_dir', './imgs/val/', 'the val data dir')
-tf.app.flags.DEFINE_string('infer_dir', './imgs/infer/', 'the infer data dir')
+tf.app.flags.DEFINE_string('train_dir', '../imgs/train/', 'the train data dir')
+tf.app.flags.DEFINE_string('val_dir', '../imgs/val/', 'the val data dir')
+tf.app.flags.DEFINE_string('infer_dir', '../imgs/infer/', 'the infer data dir')
 tf.app.flags.DEFINE_string('log_dir', './log', 'the logging dir')
 tf.app.flags.DEFINE_string('mode', 'train', 'train, val or infer')
 tf.app.flags.DEFINE_integer('num_gpus', 0, 'num of gpus')
@@ -48,7 +49,10 @@ FLAGS = tf.app.flags.FLAGS
 
 # num_batches_per_epoch = int(num_train_samples/FLAGS.batch_size)
 
-charset = '0123456789+-*()'
+# +-* + () + 10 digit + blank + space
+num_classes = 62+2
+maxPrintLen = 100
+charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 encode_maps = {}
 decode_maps = {}
 for i, char in enumerate(charset, 1):
@@ -60,7 +64,17 @@ SPACE_TOKEN = ''
 encode_maps[SPACE_TOKEN] = SPACE_INDEX
 decode_maps[SPACE_INDEX] = SPACE_TOKEN
 
-
+def read_labels(dense_decoded_code):
+    decoded_expression=[]
+    for item in dense_decoded_code:
+        expression = ''
+        for i in item:
+            if i == -1:
+                expression += ''
+            else:
+                expression += decode_maps[i]
+        decoded_expression.append(expression)
+    return decoded_expression
 class DataIterator:
     def __init__(self, data_dir):
         self.image = []
@@ -68,9 +82,12 @@ class DataIterator:
         for root, sub_folder, file_list in os.walk(data_dir):
             for file_path in file_list:
                 image_name = os.path.join(root, file_path)
-                im = cv2.imread(image_name, cv2.IMREAD_GRAYSCALE).astype(np.float32) / 255.
+                try:
+                    im = cv2.imread(image_name, cv2.IMREAD_COLOR if FLAGS.image_channel==3 else cv2.IMREAD_GRAYSCALE).astype(np.float32) / 255.
+                except:
+                    continue
                 # resize to same height, different width will consume time on padding
-                # im = cv2.resize(im, (image_width, image_height))
+                im = cv2.resize(im, (FLAGS.image_width, FLAGS.image_height))
                 im = np.reshape(im, [FLAGS.image_height, FLAGS.image_width, FLAGS.image_channel])
                 self.image.append(im)
 
@@ -117,15 +134,12 @@ def accuracy_calculation(original_seq, decoded_seq, ignore_value=-1, isPrint=Fal
     count = 0
     for i, origin_label in enumerate(original_seq):
         decoded_label = [j for j in decoded_seq[i] if j != ignore_value]
-        if isPrint and i < maxPrintLen:
-            # print('seq{0:4d}: origin: {1} decoded:{2}'.format(i, origin_label, decoded_label))
-
-            with open('./test.csv', 'w') as f:
-                f.write(str(origin_label) + '\t' + str(decoded_label))
-                f.write('\n')
 
         if origin_label == decoded_label:
             count += 1
+
+    print('seq{0:4d}: origin: {1} decoded:{2}'.format(i, origin_label, decoded_label))
+
 
     return count * 1.0 / len(original_seq)
 
