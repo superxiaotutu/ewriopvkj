@@ -1,8 +1,0 @@
-{
-    "num_per_image": 4,
-    "label_size": 62,
-    "label_choices": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
-    "n_epoch": 1,
-    "width": 110,
-    "height": 55
-}
