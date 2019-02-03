@@ -125,6 +125,10 @@ def train(train_dir=None, val_dir=None, mode='train'):
                     log = "{}/{} {}:{}:{} Epoch {}/{}, " \
                           "accuracy = {:.3f},avg_train_cost = {:.3f}, " \
                           "lastbatch_err = {:.3f}, time = {:.3f},lr={:.8f}"
+                    with open('test_acc.txt','a')as f:
+                        f.write(str(log.format(now.month, now.day, now.hour, now.minute, now.second,
+                                     cur_epoch + 1, FLAGS.num_epochs, accuracy, avg_train_cost,
+                                     lastbatch_err, time.time() - start_time, lr))+"\n")
                     print(log.format(now.month, now.day, now.hour, now.minute, now.second,
                                      cur_epoch + 1, FLAGS.num_epochs, accuracy, avg_train_cost,
                                      lastbatch_err, time.time() - start_time, lr))
