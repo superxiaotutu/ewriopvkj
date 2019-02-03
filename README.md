@@ -1,6 +1,6 @@
 # ewriopvkj
 git clone  https://github.com/superxiaotutu/ewriopvkj.git 
 
-cd lstm 
+cd ewriopvkj/lstm 
 
 python adv_cnn
