@@ -7,7 +7,7 @@ import numpy as np
 import tensorflow as tf
 import cv2
 
-
+#如果是28*28的图像就是28通过前面28个值预测下一个值
 tf.app.flags.DEFINE_integer('max_stepsize', 12, 'max_stepsize')
 
 tf.app.flags.DEFINE_boolean('restore', True, 'whether to restore from the latest checkpoint')
